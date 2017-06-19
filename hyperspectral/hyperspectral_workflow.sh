@@ -116,6 +116,7 @@ drc_in='' # [sng] Input file directory
 drc_in_xmp='drc_in' # [sng] Input file directory for examples
 drc_out="${drc_pwd}" # [sng] Output file directory
 drc_out_xmp='drc_out' # [sng] Output file directory for examples
+dvl_flg='Yes' # [flg] Development flag (archive extra fields)
 flg_swir='No' # [flg] SWIR camera
 flg_vnir='No' # [flg] VNIR camera
 gaa_sng="--gaa terraref_script=${spt_nm} --gaa workflow_invocation=\"'${cmd_ln}'\" --gaa terraref_hostname=${HOSTNAME} --gaa terraref_version=${nco_vrs}" # [sng] Global attributes to add
@@ -205,7 +206,7 @@ if [ ${arg_nbr} -eq 0 ]; then
   fnc_usg_prn
 fi # !arg_nbr
 
-while getopts c:d:hI:i:j:N:n:O:o:p:T:t:u:x OPT; do
+while getopts c:d:hI:i:j:N:n:O:o:p:T:t:u:x-: OPT; do
     case ${OPT} in
 	c) dfl_lvl=${OPTARG} ;; # Compression deflate level
 	d) dbg_lvl=${OPTARG} ;; # Debugging level
@@ -222,11 +223,19 @@ while getopts c:d:hI:i:j:N:n:O:o:p:T:t:u:x OPT; do
 	t) typ_out=${OPTARG} ;; # Type of netCDF output
 	u) unq_usr=${OPTARG} ;; # Unique suffix
 	x) xpt_flg='Yes' ;; # EXperimental
+	-) LONG_OPTARG="${OPTARG#*=}"
+	   case ${OPTARG} in
+	       # Hereafter ${OPTARG} is long argument key, and ${LONG_OPTARG}, if any, is long argument value
+	       # Long options with no argument, no short option counterpart
+	       # Long options with argument, no short option counterpart
+	       # Long options with short counterparts, ordered by short option key
+	       dvl_flg=?* | development_flag=?* | devel=?* ) dvl_flg="${LONG_OPTARG}" ;; # # Development flag
+	   esac ;; # !OPTARG
 	\?) # Unrecognized option
-	    printf "\nERROR: Option ${fnt_bld}-$OPTARG${fnt_nrm} not allowed"
+	    printf "\nERROR: Option ${fnt_bld}-${OPTARG}${fnt_nrm} not allowed\n" >&2
 	    fnc_usg_prn ;;
-    esac
-done
+    esac # !OPT
+done # !getopts
 shift $((OPTIND-1)) # Advance one argument
 
 # Positional arguments remaining, if any, correspond to input and output files
@@ -288,6 +297,12 @@ if [ -z "${drc_in}" ]; then
 else # !drc_in
     drc_in_usr_flg='Yes'
 fi # !drc_in
+if [ "${dvl_flg}" != 'Yes' ]; then
+    dvl_flg='No'
+    prd_flg='Yes'
+else
+    prd_flg='No'
+fi # !dvl_flg
 if [ -n "${job_usr}" ]; then 
     job_nbr="${job_usr}"
 fi # !job_usr
@@ -414,6 +429,7 @@ if [ ${dbg_lvl} -ge 2 ]; then
     printf "dbg: drc_out  = ${drc_out}\n"
     printf "dbg: drc_spt  = ${drc_spt}\n"
     printf "dbg: drc_tmp  = ${drc_tmp}\n"
+    printf "dbg: dvl_flg  = ${dvl_flg}\n"
     printf "dbg: gaa_sng  = ${gaa_sng}\n"
     printf "dbg: hdr_pad  = ${hdr_pad}\n"
     printf "dbg: hsi_flg  = ${hsi_flg}\n"
@@ -679,12 +695,12 @@ for ((fl_idx=0;fl_idx<${fl_nbr};fl_idx++)); do
 	    fi # !err
 	fi # !dbg
 
-	# Calculate hyperspectral indices file 
+	# Calculate hyperspectral indices
 	if [ "${hsi_flg}" = 'Yes' ]; then
-            # check for auto generated include file "hyperspectral_indices_meta.nco" (created from BETYDB )
+            # Check for auto-generated include file "hyperspectral_indices_meta.nco" (created from BETYDB)
             hsi_meta="${drc_spt}/hyperspectral_indices_meta.nco"   
-            # create file if it doesn't exists or is more than 24 hours old
-            if [ ! -e "$hsi_meta" ] || [  $(( $(date +'%s') - $(stat -c "%Y" "$hsi_meta") )) -gt $(( 24*60*60 ))  ]; then 
+            # Create file if it does not exist or is more than 24 hours old
+            if [ ! -e "$hsi_meta" ] || [ $(( $(date +'%s') - $(stat -c "%Y" "$hsi_meta") )) -gt $(( 24*60*60 )) ]; then 
               "${drc_spt}/get_meta_indicex_bety.py" > "$hsi_meta"                                    
             fi           
             hsi_in=${clb_out}
@@ -703,7 +719,6 @@ for ((fl_idx=0;fl_idx<${fl_nbr};fl_idx++)); do
 		fi # !err
 	    fi # !dbg
 	fi # !hsi_flg
-        
     fi # !clb_flg
 
     # Compress and/or pack final data file
