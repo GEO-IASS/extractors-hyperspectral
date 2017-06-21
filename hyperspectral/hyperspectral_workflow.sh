@@ -111,6 +111,7 @@ if [ -n "${TERM}" ]; then
 fi # !TERM
 
 # Defaults for command-line options and some derived variables
+ncap2_opt='' # [sng] Calibration options
 cln_flg='Yes' # [flg] Clean-up (remove) intermediate files before exiting
 dbg_lvl=0 # [nbr] Debugging level
 dfl_lvl='' # [nbr] [enm] Deflate level [0..9]
@@ -299,11 +300,12 @@ if [ -z "${drc_in}" ]; then
 else # !drc_in
     drc_in_usr_flg='Yes'
 fi # !drc_in
-if [ "${dvl_flg}" != 'Yes' ]; then
+if [ "${dvl_flg}" = 'Yes' ]; then
+    prd_flg='No'
+    ncap2_opt='-s \*flg_tst=1'
+else
     dvl_flg='No'
     prd_flg='Yes'
-else
-    prd_flg='No'
 fi # !dvl_flg
 if [ -n "${job_usr}" ]; then 
     job_nbr="${job_usr}"
@@ -671,10 +673,10 @@ for ((fl_idx=0;fl_idx<${fl_nbr};fl_idx++)); do
 	# Hence perform calibration as root-level append operation, then, if successful, move file to output file
 	#cmd_clb[${fl_idx}]="ncap2 -A -S ${drc_spt}/hyperspectral_calibration.nco ${clb_in} ${clb_in}"
 	#drc_spt_var="\*drc_spt='\"${drc_spt}\"s'" # OK, passes string into variable
-	drc_spt_att="@drc_spt='\"${drc_spt}\"'" 
+	#drc_spt_att="@drc_spt='\"${drc_spt}\"'" 
 	# NCO_PATH environment variable required for hyperspectral_calibration.nco to find hyperspectral_spectralon_reflectance_factory.nco
 	export NCO_PATH="${drc_spt}"
-	cmd_clb[${fl_idx}]="ncap2 -A ${nco_opt} -S ${drc_spt}/hyperspectral_calibration.nco ${clb_in} ${clb_in}"
+	cmd_clb[${fl_idx}]="ncap2 -A ${nco_opt} ${ncap2_opt} -S ${drc_spt}/hyperspectral_calibration.nco ${clb_in} ${clb_in}"
 	if [ ${dbg_lvl} -ge 1 ]; then
 	    echo ${cmd_clb[${fl_idx}]}
 	fi # !dbg
