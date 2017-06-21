@@ -13,10 +13,10 @@
 
 // Run in test or production mode?
 if(!exists(flg_prd)) *flg_prd=1s; // [enm] Production mode
-if(!exists(flg_tst)) *flg_tst=0s; // [enm] Test mode
-if(flg_tst) flg_prd=0s; // [enm] Production mode
+if(!exists(flg_dvl)) *flg_dvl=0s; // [enm] Development mode
+if(flg_dvl) flg_prd=0s; // [enm] Production mode
 if(flg_prd) print("Calibration running in production mode\n");
-if(flg_tst) print("Calibration running in test mode\n");
+if(flg_dvl) print("Calibration running in development mode\n");
 
 // Declare flags as RAM variables or they will clutter output file
 *flg_vnir=0s; // [flg] VNIR image
@@ -36,11 +36,11 @@ if(min(wavelength) < 0.5e-6){
   flg_vnir=1s;
   *x_pxl_spc=0.001025; // [m]
   @camera="VNIR Camera";
- }else{
+}else{
   flg_swir=1s;
   *x_pxl_spc=0.001930615052; // [m]
   @camera="SWIR Camera";
- } // !wavelength
+} // !wavelength
 
 // Add georeferenced coordinates
 // Store x and y in double-precision in case we use lat/lon
@@ -81,7 +81,8 @@ xps_img_min@units="Counts on scale from 0 to 2^16-1 = 65535";
 
 /* Interpolate factory calibration of Spectralon target to wavelength grid of current instrument (VNIR, SWIR) */
 gsl_interp_cspline(&ram_ntp_spl,wvl_clb,factory_calibrated_reflectance);
-factory_calibrated_reflectance_interpolated=float(gsl_spline_eval(ram_ntp_spl,wavelength));
+if(flg_dvl) factory_calibrated_reflectance_interpolated=float(gsl_spline_eval(ram_ntp_spl,wavelength));
+else *factory_calibrated_reflectance_interpolated=float(gsl_spline_eval(ram_ntp_spl,wavelength));
 ram_delete(ram_ntp_spl);
 
 if(flg_swir){
@@ -134,8 +135,9 @@ xps_img_drk@units="Counts on scale from 0 to 2^16-1 = 65535";
 
 // [frc] Reflectance of Spectralon reference target (from factory calibration)
 // 20160908: Add angular dependence?
-if(flg_swir) rfl_rfr_fct[wavelength]=factory_calibrated_reflectance_guesstimate;
-if(flg_vnir) rfl_rfr_fct[wavelength]=factory_calibrated_reflectance_interpolated;
+if(flg_prd) *rfl_rfr_fct[wavelength]=0.0f;
+if(flg_swir) rfl_rfr_fct=factory_calibrated_reflectance_guesstimate;
+if(flg_vnir) rfl_rfr_fct=factory_calibrated_reflectance_interpolated;
 rfl_rfr_fct@long_name="Reflectance of Spectralon reference target (from factory calibration)";
 rfl_rfr_fct@units="1";
 
@@ -152,6 +154,7 @@ rfl_img@standard_name="surface_albedo";
 rfl_img@units="1";
   
 // Compute quality control diagnostics
+if(flg_dvl){
 rfl_img_max=rfl_img.max($y,$x);
 rfl_img_max@long_name="Maximum reflectance at each wavelength";
 rfl_img_max@units="1";
@@ -159,3 +162,4 @@ rfl_img_max@units="1";
 rfl_img_min=rfl_img.min($y,$x);
 rfl_img_min@long_name="Minimum reflectance at each wavelength";
 rfl_img_min@units="1";
+} // !flg_dvl

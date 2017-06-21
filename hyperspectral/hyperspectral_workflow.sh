@@ -232,10 +232,12 @@ while getopts c:d:hI:i:j:N:n:O:o:p:T:t:u:x-: OPT; do
 	       # Long options with no argument, no short option counterpart
 	       # Long options with argument, no short option counterpart
 	       # Long options with short counterparts, ordered by short option key
-	       dvl_flg=?* | development_flag=?* | devel=?* ) dvl_flg="${LONG_OPTARG}" ;; # # Development flag
+	       dvl_flg=?* | dvl=?* | development_flag=?* | devel=?* ) dvl_flg="${LONG_OPTARG}" ;; # # Development flag
+               '' ) break ;; # "--" terminates argument processing
+               * ) printf "\nERROR: Unrecognized option ${fnt_bld}--${OPTARG}${fnt_nrm}\n" >&2; fnc_usg_prn ;;
 	   esac ;; # !OPTARG
 	\?) # Unrecognized option
-	    printf "\nERROR: Option ${fnt_bld}-${OPTARG}${fnt_nrm} not allowed\n" >&2
+	    printf "\nERROR: Option ${fnt_bld}-${OPTARG}${fnt_nrm} not recognized\n" >&2
 	    fnc_usg_prn ;;
     esac # !OPT
 done # !getopts
@@ -302,7 +304,7 @@ else # !drc_in
 fi # !drc_in
 if [ "${dvl_flg}" = 'Yes' ]; then
     prd_flg='No'
-    ncap2_opt='-s \*flg_tst=1'
+    ncap2_opt='-s \*flg_dvl=1'
 else
     dvl_flg='No'
     prd_flg='Yes'
@@ -754,7 +756,11 @@ for ((fl_idx=0;fl_idx<${fl_nbr};fl_idx++)); do
 	rip_out=${out_fl}
 	printf "rip(in)  : ${rip_in}\n"
 	printf "rip(out) : ${rip_out}\n"
-	cmd_rip[${fl_idx}]="/bin/mv -f ${rip_in} ${rip_out}"
+	if [ "${dvl_flg}" = 'Yes' ]; then
+	    cmd_rip[${fl_idx}]="/bin/mv -f ${rip_in} ${rip_out}"
+	else # !dvl
+	    cmd_rip[${fl_idx}]="ncks -O -x -v xps_.? ${rip_in} ${rip_out}"
+	fi # !dvl
 	if [ ${dbg_lvl} -ge 1 ]; then
 	    echo ${cmd_rip[${fl_idx}]}
 	fi # !dbg
