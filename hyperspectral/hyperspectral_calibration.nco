@@ -11,14 +11,16 @@
    Usage:
    ncap2 -v -O -S ~/terraref/extractors-hyperspectral/hyperspectral/hyperspectral_calibration.nco ${DATA}/terraref/whiteReference_raw.nc ~/foo.nc */
 
+// Run in test or production mode?
+if(!exists(flg_prd)) *flg_prd=1s; // [enm] Production mode
+if(!exists(flg_tst)) *flg_tst=0s; // [enm] Test mode
+if(flg_tst) flg_prd=0s; // [enm] Production mode
+if(flg_prd) print("Calibration running in production mode\n");
+if(flg_tst) print("Calibration running in test mode\n");
+
 // Declare flags as RAM variables or they will clutter output file
-*flg_tst=1s; // [flg] Test mode
-*flg_prd=0s; // [flg] Production mode
 *flg_vnir=0s; // [flg] VNIR image
 *flg_swir=0s; // [flg] SWIR image
-
-// Run in test or production mode?
-*flg_typ=flg_prd; // [enm] Run type
 
 // Defaults for values not provided on command-line
 if(!exists(clb_nbr)) *clb_nbr=73; // [nbr] Calibration number
